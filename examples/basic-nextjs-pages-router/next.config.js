@@ -94,6 +94,34 @@ const nextConfig = {
         test: /src\\components\\.*\.tsx$/,
         use: ['@sitecore-content-sdk\\nextjs\\component-props-loader'],
       });
+
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'node:events': false,
+        'node:fs': false,
+        'node:fs/promises': false,
+        'node:path': false,
+        'node:stream': false,
+      };
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        events: false,
+        fs: false,
+        module: false,
+        path: false,
+        stream: false,
+      };
+      config.plugins.push({
+        apply(compiler) {
+          compiler.hooks.normalModuleFactory.tap('NormalizeNodeProtocol', (normalModuleFactory) => {
+            normalModuleFactory.hooks.beforeResolve.tap('NormalizeNodeProtocol', (resolveData) => {
+              if (resolveData.request.startsWith('node:')) {
+                resolveData.request = resolveData.request.replace(/^node:/, '');
+              }
+            });
+          });
+        },
+      });
     } else {
       // Force use of CommonJS on the server for FEAAS SDK since Content SDK also uses CommonJS entrypoint to FEAAS SDK.
       // This prevents issues arising due to FEAAS SDK's dual CommonJS/ES module support on the server (via conditional exports).
